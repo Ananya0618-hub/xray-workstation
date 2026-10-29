@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100 dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Radiology Vision Lab - Medical X-ray Contrast Enhancement</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <!-- Chart.js for Histogram rendering -->
+  <script src="/vendor/chart/chart.umd.js"></script>
+  <!-- Lucide Icons -->
+  <script src="/vendor/lucide/lucide.min.js"></script>
+  <!-- Google Font: Inter & JetBrains Mono -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            clinical: {
+              50: '#f0fdfa',
+              500: '#14b8a6',
+              600: '#0d9488',
+              900: '#134e4a',
+            },
+            rad: {
+              950: '#070c14',
+              900: '#0f172a',
+              800: '#1e293b',
+              700: '#334155',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar for dark medical UI */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #0ea5e9;
+    }
+    .grid-bg {
+      background-size: 20px 20px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    }
+  </style>
+</head>
+<body class="h-full font-sans antialiased overflow-hidden flex flex-col bg-rad-950 text-slate-200">
+
+  <!-- Header / Top Bar -->
+  <header class="h-14 border-b border-slate-800 bg-rad-900/90 backdrop-blur px-4 flex items-center justify-between shrink-0 z-20">
+    <div class="flex items-center space-x-3">
+      <div class="p-2 bg-cyan-500/10 text-cyan-400 rounded-lg border border-cyan-500/20">
+        <i data-lucide="activity" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-sm md:text-base tracking-wide text-slate-100 flex items-center gap-2">
+          RADIOLOGY VISION LAB <span class="text-xs px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-400 font-mono border border-cyan-500/30">CLAHE v2.4</span>
+        </h1>
+        <p class="text-[10px] text-slate-400 hidden sm:block">Spatial Domain Radiograph Enhancement & Histogram Processing Workstation</p>
+      </div>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="flex items-center space-x-3">
+      <label for="imageUpload" class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-2 rounded-md font-medium border border-slate-700 transition flex items-center gap-1.5">
+        <i data-lucide="upload" class="w-4 h-4 text-cyan-400"></i>
+        <span>Upload DICOM/Image</span>
+        <input type="file" id="imageUpload" accept="image/*" class="hidden">
+      </label>
+      <button id="exportBtn" class="bg-cyan-600 hover:bg-cyan-500 text-white text-xs px-3 py-2 rounded-md font-medium border border-cyan-500 shadow-sm transition flex items-center gap-1.5">
+        <i data-lucide="download" class="w-4 h-4"></i>
+        <span>Export Enhanced PNG</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <div class="flex-1 flex overflow-hidden">
+    
+    <!-- Left Sidebar: Controls & Preset Selector -->
+    <aside class="w-80 border-r border-slate-800 bg-rad-900 flex flex-col overflow-y-auto shrink-0 z-10">
+      
+      <!-- Preset Synthetic Generator -->
+      <div class="p-4 border-b border-slate-800">
+        <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2 flex items-center gap-1">
+          <i data-lucide="layers" class="w-3.5 h-3.5 text-cyan-400"></i>
+          Sample Radiographs
+        </label>
+        <div class="grid grid-cols-2 gap-2">
+          <button class="preset-btn active text-left text-xs p-2 rounded bg-slate-800/80 hover:bg-slate-700 border border-slate-700 transition flex items-center gap-2" data-preset="chest">
+            <i data-lucide="heart-pulse" class="w-4 h-4 text-cyan-400"></i>
+            <span>Chest X-Ray</span>
+          </button>
+          <button class="preset-btn text-left text-xs p-2 rounded bg-slate-800/80 hover:bg-slate-700 border border-slate-700 transition flex items-center gap-2" data-preset="hand">
+            <i data-lucide="hand" class="w-4 h-4 text-cyan-400"></i>
+            <span>Hand Bone</span>
+          </button>
+          <button class="preset-btn text-left text-xs p-2 rounded bg-slate-800/80 hover:bg-slate-700 border border-slate-700 transition flex items-center gap-2" data-preset="spine">
+            <i data-lucide="align-justify" class="w-4 h-4 text-cyan-400"></i>
+            <span>Spine X-Ray</span>
+          </button>
+          <button class="preset-btn text-left text-xs p-2 rounded bg-slate-800/80 hover:bg-slate-700 border border-slate-700 transition flex items-center gap-2" data-preset="dental">
+            <i data-lucide="smile" class="w-4 h-4 text-cyan-400"></i>
+            <span>Dental Intraoral</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Processing Algorithm Selector -->
+      <div class="p-4 border-b border-slate-800">
+        <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2 flex items-center gap-1">
+          <i data-lucide="sliders" class="w-3.5 h-3.5 text-cyan-400"></i>
+          Enhancement Method
+        </label>
+        <select id="methodSelect" class="w-full bg-slate-950 text-slate-200 border border-slate-700 text-xs rounded-md p-2.5 outline-none focus:border-cyan-500 font-mono">
+          <option value="clahe">CLAHE (Adaptive Local)</option>
+          <option value="he">Global Histogram Equalization</option>
+          <option value="gamma">Gamma / Power-Law Correction</option>
+          <option value="log">Logarithmic Transformation</option>
+          <option value="stretch">Linear Contrast Stretching</option>
+          <option value="negative">Invert / Radiographic Negative</option>
+          <option value="original">Original (Unprocessed)</option>
+        </select>
+      </div>
+
+      <!-- Dynamic Parameters Panel -->
+      <div class="p-4 border-b border-slate-800 space-y-4 flex-1">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Algorithm Parameters</span>
+          <span id="activeMethodBadge" class="text-[10px] bg-cyan-500/20 text-cyan-400 font-mono px-2 py-0.5 rounded border border-cyan-500/30">CLAHE</span>
+        </div>
+
+        <!-- CLAHE Controls -->
+        <div id="claheParams" class="space-y-3">
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300">Clip Limit:</span>
+              <span id="clipVal" class="font-mono text-cyan-400">3.0</span>
+            </div>
+            <input type="range" id="clipLimit" min="1.0" max="10.0" step="0.5" value="3.0" class="w-full accent-cyan-500">
+            <p class="text-[10px] text-slate-500 mt-1">Prevents over-amplification of noise in homogeneous regions.</p>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300">Tile Grid Size:</span>
+              <span id="gridVal" class="font-mono text-cyan-400">8 x 8</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 mt-1">
+              <button class="grid-btn py-1 text-xs rounded border border-slate-700 bg-slate-800 hover:bg-slate-700" data-grid="4">4x4</button>
+              <button class="grid-btn active py-1 text-xs rounded border border-cyan-500 bg-cyan-500/20 text-cyan-300 font-semibold" data-grid="8">8x8</button>
+              <button class="grid-btn py-1 text-xs rounded border border-slate-700 bg-slate-800 hover:bg-slate-700" data-grid="16">16x16</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gamma Controls -->
+        <div id="gammaParams" class="space-y-3 hidden">
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300">Gamma (&gamma;):</span>
+              <span id="gammaVal" class="font-mono text-cyan-400">0.60</span>
+            </div>
+            <input type="range" id="gammaSlider" min="0.1" max="3.0" step="0.05" value="0.6" class="w-full accent-cyan-500">
+            <p class="text-[10px] text-slate-500 mt-1">&gamma; &lt; 1 enhances dark soft tissue; &gamma; &gt; 1 compresses bright bone structure.</p>
+          </div>
+        </div>
+
+        <!-- Linear Stretch Controls -->
+        <div id="stretchParams" class="space-y-3 hidden">
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300">Min Intensity Cutoff:</span>
+              <span id="minVal" class="font-mono text-cyan-400">30</span>
+            </div>
+            <input type="range" id="minCutoff" min="0" max="250" step="1" value="30" class="w-full accent-cyan-500">
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300">Max Intensity Cutoff:</span>
+              <span id="maxVal" class="font-mono text-cyan-400">225</span>
+            </div>
+            <input type="range" id="maxCutoff" min="5" max="255" step="1" value="225" class="w-full accent-cyan-500">
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-Time Metrics -->
+      <div class="p-4 bg-rad-950/60 border-t border-slate-800 space-y-2">
+        <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1 flex items-center gap-1">
+          <i data-lucide="cpu" class="w-3.5 h-3.5 text-cyan-400"></i>
+          Performance Metrics
+        </label>
+        <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+          <div class="bg-slate-900 p-2 rounded border border-slate-800">
+            <span class="text-slate-500 block text-[10px]">EXECUTION TIME</span>
+            <span id="metricTime" class="text-cyan-400 font-bold">0.0 ms</span>
+          </div>
+          <div class="bg-slate-900 p-2 rounded border border-slate-800">
+            <span class="text-slate-500 block text-[10px]">CONTRAST INDEX</span>
+            <span id="metricContrast" class="text-teal-400 font-bold">0.00</span>
+          </div>
+          <div class="bg-slate-900 p-2 rounded border border-slate-800">
+            <span class="text-slate-500 block text-[10px]">ENTROPY (BITS)</span>
+            <span id="metricEntropy" class="text-emerald-400 font-bold">0.00</span>
+          </div>
+          <div class="bg-slate-900 p-2 rounded border border-slate-800">
+            <span class="text-slate-500 block text-[10px]">EST. PSNR</span>
+            <span id="metricPsnr" class="text-sky-400 font-bold">INF dB</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center Workspace Area -->
+    <main class="flex-1 flex flex-col bg-rad-950 relative overflow-hidden grid-bg">
+      
+      <!-- Toolbar -->
+      <div class="h-10 border-b border-slate-800 bg-rad-900/60 px-4 flex items-center justify-between shrink-0">
+        <!-- View Mode Switcher -->
+        <div class="flex items-center space-x-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+          <button id="viewSplit" class="view-btn px-2.5 py-1 text-xs rounded-md bg-slate-800 text-cyan-400 font-medium transition flex items-center gap-1.5">
+            <i data-lucide="split" class="w-3.5 h-3.5"></i>
+            <span>Split Slider</span>
+          </button>
+          <button id="viewSide" class="view-btn px-2.5 py-1 text-xs rounded-md text-slate-400 hover:text-slate-200 transition flex items-center gap-1.5">
+            <i data-lucide="columns" class="w-3.5 h-3.5"></i>
+            <span>Side-by-Side</span>
+          </button>
+        </div>
+
+        <span id="status" class="text-[11px] font-mono text-slate-500" role="status" aria-live="polite"></span>
+
+        <!-- Tool Toggles -->
+        <div class="flex items-center space-x-3 text-xs">
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" id="toggleLoupe" class="rounded bg-slate-950 border-slate-700 text-cyan-500 focus:ring-0">
+            <span class="text-slate-300 flex items-center gap-1">
+              <i data-lucide="search" class="w-3.5 h-3.5 text-cyan-400"></i>
+              ROI Loupe Zoom (2x)
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Main Canvas Viewport Container -->
+      <div id="viewport" class="flex-1 relative flex items-center justify-center p-4 overflow-hidden select-none">
+        
+        <!-- Split View Container -->
+        <div id="splitViewContainer" class="relative w-full h-full max-w-4xl max-h-[80vh] flex items-center justify-center">
+          <!-- Canvas for Original -->
+          <canvas id="canvasOriginal" class="absolute max-w-full max-h-full object-contain rounded shadow-2xl border border-slate-800"></canvas>
+          
+          <!-- Canvas Container for Processed (Clipped for Split) -->
+          <div id="processedWrapper" class="absolute inset-0 overflow-hidden flex items-center justify-center">
+            <canvas id="canvasProcessed" class="max-w-full max-h-full object-contain rounded shadow-2xl border border-cyan-500/30"></canvas>
+          </div>
+
+          <!-- Split Divider Line -->
+          <div id="splitDivider" class="absolute top-0 bottom-0 w-0.5 bg-cyan-400 shadow-[0_0_10px_rgba(14,165,233,0.8)] cursor-ew-resize flex items-center justify-center z-10" style="left: 50%;">
+            <div class="w-6 h-6 rounded-full bg-cyan-500 text-slate-950 flex items-center justify-center shadow-md font-bold text-xs border border-white">
+              &#8596;
+            </div>
+          </div>
+        </div>
+
+        <!-- Side by Side Container -->
+        <div id="sideViewContainer" class="hidden w-full h-full max-w-5xl flex gap-4 items-center justify-center">
+          <div class="flex-1 h-full flex flex-col items-center justify-center relative">
+            <span class="absolute top-2 left-2 px-2 py-1 bg-slate-900/80 backdrop-blur rounded text-[11px] text-slate-400 border border-slate-700">Original Radiograph</span>
+            <canvas id="canvasSideOriginal" class="max-w-full max-h-full object-contain rounded border border-slate-800"></canvas>
+          </div>
+          <div class="flex-1 h-full flex flex-col items-center justify-center relative">
+            <span class="absolute top-2 left-2 px-2 py-1 bg-cyan-950/80 backdrop-blur rounded text-[11px] text-cyan-300 border border-cyan-800">Enhanced Signal</span>
+            <canvas id="canvasSideProcessed" class="max-w-full max-h-full object-contain rounded border border-cyan-500/40"></canvas>
+          </div>
+        </div>
+
+        <!-- Magnifier ROI Loupe -->
+        <div id="loupe" class="pointer-events-none absolute w-40 h-40 rounded-full border-2 border-cyan-400 bg-slate-950 shadow-[0_0_20px_rgba(0,0,0,0.8)] hidden overflow-hidden z-30">
+          <canvas id="loupeCanvas" class="w-full h-full"></canvas>
+        </div>
+      </div>
+
+      <!-- Bottom Panel: Histogram Analysis -->
+      <div class="h-44 border-t border-slate-800 bg-rad-900/95 p-3 flex flex-col shrink-0">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="bar-chart-2" class="w-4 h-4 text-cyan-400"></i>
+            Intensity Histogram Distribution (0 - 255 Gray Levels)
+          </span>
+          <div class="flex items-center gap-4 text-xs font-mono">
+            <span class="flex items-center gap-1.5 text-slate-400">
+              <span class="w-2.5 h-2.5 rounded-full bg-slate-500 inline-block"></span> Original
+            </span>
+            <span class="flex items-center gap-1.5 text-cyan-400">
+              <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block"></span> Enhanced
+            </span>
+          </div>
+        </div>
+        <div class="flex-1 relative w-full h-full">
+          <canvas id="histogramChart"></canvas>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

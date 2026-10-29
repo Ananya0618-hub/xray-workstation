@@ -1,0 +1,20 @@
+{
+  "name": "radiology-vision-lab",
+  "version": "1.0.0",
+  "description": "Medical X-ray contrast enhancement workstation (Node.js + Express + sharp)",
+  "main": "server.js",
+  "type": "commonjs",
+  "engines": { "node": ">=18.17" },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "cli": "node cli.js"
+  },
+  "dependencies": {
+    "chart.js": "4.4.7",
+    "express": "4.21.2",
+    "lucide": "0.468.0",
+    "multer": "2.0.2",
+    "sharp": "0.33.5"
+  }
+}
